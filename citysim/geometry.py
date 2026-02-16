@@ -24,9 +24,17 @@ def make_mask(w: int, h: int, preset: str, params: dict) -> np.ndarray:
 
     return mask
 
-def apply_blocked_cells(mask: np.ndarray, blocked: list[list[int]]) -> np.ndarray:
+def apply_blocked_cells(mask: np.ndarray, blocked) -> np.ndarray:
     out = mask.copy()
-    for (y, x) in blocked:
+
+    # ✅ если None / [] / Falsey — просто возвращаем маску
+    if not blocked:
+        return out
+
+    for pair in blocked:
+        if pair is None:
+            continue
+        y, x = pair
         if 0 <= y < out.shape[0] and 0 <= x < out.shape[1]:
             out[y, x] = False
     return out
