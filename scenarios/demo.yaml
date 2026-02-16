@@ -1,0 +1,121 @@
+seed: 7
+
+grid:
+  w: 35
+  h: 35
+  cell_size: 1.0
+  topology: square         # square | hex (в v0.1 используем square)
+  walk_radius: 2.5         # в клетках: до этого расстояния игнорируем дороги (пешком)
+
+city_shape:
+  preset: circle           # circle | rectangle | custom
+  params:
+    radius: 14             # для circle
+    # width: 30            # для rectangle
+    # height: 20
+
+obstacles:
+  blocked_cells:           # естественные препятствия: просто “нет земли”
+    # - [17, 10]
+  blocked_roads:           # препятствия на дорогах (вырубает ребра)
+    # - [[10,10], [10,11]]
+
+roads:
+  mode: grid4              # grid4 | grid8 | custom
+  connectivity: 0.92       # 0..1: доля сохранённых дорог (регулирует связность)
+  weight: 1.0              # время/длина ребра (v0.1 одинаковые)
+  custom_edges: []         # для custom: список ребер [[x1,y1],[x2,y2],w]
+
+population:
+  total: 8000
+  distribution: gaussian   # uniform | gaussian
+  params:
+    center: [17, 17]
+    sigma: 7.0
+
+factor_markets:
+  labor_supply:
+    kind: shifted_power
+    params:
+      b: 0.6         # резервация зарплаты (нижняя граница)
+      w_bar: 2.0     # “верхняя шкала” зарплаты для нормировки
+      beta: 2.5      # крутизна предложения
+      ell_bar: 1.0   # максимум труда на домохозяйство
+  rent_supply:
+    kind: linear
+    params:
+      kappa: 200.0   # базовое предложение площади (на клетку суммарно)
+      lambda: 80.0   # наклон
+
+households:
+  groups:
+    - name: food_substitutes
+      budget_share: 0.55
+      sigma_top: 2.0              # >1: заменители
+      industries: [retail, cafe]
+      weights:   [1.0,   1.0]
+    - name: leisure_complements
+      budget_share: 0.45
+      sigma_top: 0.7              # <1: комплементы (мягко)
+      industries: [cinema, cafe]
+      weights:   [1.0,    1.0]
+
+industries:
+  - id: retail
+    mode: B2C
+    sigma_firms: 6.0
+    cbar: 1.0
+    labor_share: 0.55
+    rent_share: 0.10
+    tau_H: 0.04          # транспорт населения
+    entry_cost: 30.0
+    fixed_cost: 3.0
+    firms_init: 18
+    input:
+      type: exogenous
+      a: 0.30            # инпут на единицу выпуска
+      supply:
+        kappa: 2000.0
+        lambda: 1500.0
+
+  - id: cafe
+    mode: B2C
+    sigma_firms: 5.0
+    cbar: 1.2
+    labor_share: 0.65
+    rent_share: 0.20
+    tau_H: 0.06
+    entry_cost: 40.0
+    fixed_cost: 4.0
+    firms_init: 10
+    input:
+      type: exogenous
+      a: 0.20
+      supply:
+        kappa: 1200.0
+        lambda: 900.0
+
+  - id: cinema
+    mode: B2C
+    sigma_firms: 4.0
+    cbar: 1.4
+    labor_share: 0.50
+    rent_share: 0.35
+    tau_H: 0.05
+    entry_cost: 60.0
+    fixed_cost: 6.0
+    firms_init: 6
+    input:
+      type: exogenous
+      a: 0.10
+      supply:
+        kappa: 800.0
+        lambda: 600.0
+
+dynamics:
+  steps: 30
+  delta: 0.97
+  horizon: 12
+  shock_std: 0.15         # шок в долях от fixed_cost (для стабильности)
+  allow_relocation: true
+  relocation_cost_equals_entry: true
