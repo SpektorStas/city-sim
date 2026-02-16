@@ -1,0 +1,175 @@
+seed: 7
+
+grid:
+  w: 35
+  h: 35
+  cell_size: 1.0
+  topology: square
+  walk_radius: 2.5
+
+city_shape:
+  preset: circle
+  params:
+    radius: 14
+
+obstacles:
+  blocked_cells: []
+  blocked_roads: []
+
+roads:
+  mode: grid4
+  connectivity: 0.90
+  weight: 1.0
+  custom_edges: []
+
+population:
+  total: 8000
+  distribution: gaussian
+  params:
+    center: [17, 17]
+    sigma: 7.0
+
+factor_markets:
+  labor_supply:
+    kind: shifted_power
+    params:
+      b: 0.6
+      w_bar: 2.0
+      beta: 2.5
+      ell_bar: 1.0
+  rent_supply:
+    kind: linear
+    params:
+      kappa: 200.0
+      lambda: 80.0
+
+households:
+  groups:
+    - name: food_substitutes
+      budget_share: 0.55
+      sigma_top: 2.0
+      industries: [retail, cafe]
+      weights:   [1.0,   1.0]
+    - name: leisure_complements
+      budget_share: 0.45
+      sigma_top: 0.7
+      industries: [cinema, cafe]
+      weights:   [1.0,    1.0]
+
+# IMPORTANT:
+# - industries can be B2C or B2B
+# - B2C industries have tau_H (households transport)
+# - B2B industries sell intermediate goods; their logistics is paid by supplier
+
+industries:
+  # --- B2B supplier: FARM (intermediate goods)
+  - id: farm
+    mode: B2B
+    sigma_firms: 6.0
+    cbar: 0.9
+    labor_share: 0.50
+    rent_share: 0.05
+    entry_cost: 35.0
+    fixed_cost: 3.0
+    firms_init: 10
+    labor_demand_coeff: 0.018
+    space_demand_coeff: 0.006
+    b2b:
+      nu: 4.0         # elasticity across suppliers (substitutes) in B2B
+      tau_L: 0.08     # logistics intensity
+      eta: 0.75       # 0<eta<1 : economy of scale in logistics ("smearing")
+      eps: 1e-3
+
+    # farm buys an exogenous input (e.g., fertilizer/energy)
+    inputs:
+      - name: fert
+        type: exogenous
+        a: 0.15
+        supply:
+          kappa: 1400.0
+          lambda: 1100.0
+
+  # --- B2C industries: RETAIL / CAFE / CINEMA
+  - id: retail
+    mode: B2C
+    sigma_firms: 6.0
+    cbar: 1.0
+    labor_share: 0.55
+    rent_share: 0.10
+    tau_H: 0.04
+    entry_cost: 30.0
+    fixed_cost: 3.0
+    firms_init: 18
+    labor_demand_coeff: 0.020
+    space_demand_coeff: 0.010
+    inputs:
+      - name: farm_goods
+        type: endogenous
+        from_industry: farm
+        a: 0.35     # intermediate per unit output
+        nu: 4.0     # buyer elasticity across suppliers (can differ from supplier default)
+        tau_L: 0.08
+        eta: 0.75
+        eps: 1e-3
+      - name: ext_packaging
+        type: exogenous
+        a: 0.10
+        supply:
+          kappa: 2000.0
+          lambda: 1500.0
+
+  - id: cafe
+    mode: B2C
+    sigma_firms: 5.0
+    cbar: 1.2
+    labor_share: 0.65
+    rent_share: 0.20
+    tau_H: 0.06
+    entry_cost: 40.0
+    fixed_cost: 4.0
+    firms_init: 10
+    labor_demand_coeff: 0.022
+    space_demand_coeff: 0.014
+    inputs:
+      - name: food
+        type: endogenous
+        from_industry: farm
+        a: 0.25
+        nu: 4.0
+        tau_L: 0.10
+        eta: 0.75
+        eps: 1e-3
+
+  - id: cinema
+    mode: B2C
+    sigma_firms: 4.0
+    cbar: 1.4
+    labor_share: 0.50
+    rent_share: 0.35
+    tau_H: 0.05
+    entry_cost: 60.0
+    fixed_cost: 6.0
+    firms_init: 6
+    labor_demand_coeff: 0.018
+    space_demand_coeff: 0.020
+    inputs:
+      - name: ext_energy
+        type: exogenous
+        a: 0.12
+        supply:
+          kappa: 900.0
+          lambda: 700.0
+
+dynamics:
+  steps: 30
+  delta: 0.97
+  horizon: 12
+  shock_std: 0.15
+  allow_relocation: false
+  relocation_cost_equals_entry: true
+
+  # v0.3 entry/exit knobs
+  entry_attempts_per_industry: 2     # сколько попыток входа в отрасль за шаг
+  entry_prob_cap: 0.35              # верхняя граница вероятности входа в одну попытку
+  entry_sensitivity: 0.04           # как быстро растет вероятность входа при положительном зазоре
+
